@@ -6,7 +6,10 @@ use serde_json::{json, Value};
 
 // Lazer made by Monsler
 
+
+
 fn main() {
+    let VERSION_EXPORT = "1-0-3";
     let args: Vec<String> = env::args().collect();
 
     let str = "| Lazer | Lazurite package helper |";
@@ -73,6 +76,8 @@ fn main() {
             let resp: Vec<json::JsonValue> = json::parse(&body).into_iter().collect();
             let mut int = 0;
             println!("{body}");
+        }else if arg == "version-running" {
+            println!("Version: {VERSION_EXPORT}\n");
         }
     }else{
         println!("It's looks like you need a help.\n\nMethods:\nnew - create new project. Syntax: new [name,] [directory]\nrun - Runs the project. Syntax: run [directory]\nremove - Destroys the project. Syntax: remove [directory]\ninstall - Installs library into your project. Syntax: install [libname,] [directory_project]\navailable-libs - Scan the repo for libraries name. Syntax: available-libs\nunset - Removes library from project. Syntax: unset [libname,] [directory]\n:3\nIf you want to upload your own library, dm me on discord: @monsler\n\n");
