@@ -9,7 +9,7 @@ use serde_json::{json, Value};
 
 
 fn main() {
-    let VERSION_EXPORT = "1-0-3";
+    let VERSION_EXPORT = "1-1-0";
     let args: Vec<String> = env::args().collect();
 
     let str = "| Lazer | Lazurite package helper |";
@@ -33,7 +33,7 @@ fn main() {
             fs::create_dir(&format!("{}/{}/src/lib", pth, name)).unwrap();
             let mut index = File::create(&format!("{pth}/{name}/src/index.lzr")).expect("ERROR");
             let mut mark = File::create(&format!("{pth}/{name}/.lazer")).expect("ERROR");
-            mark.write_all("Do not delete this! You may break the project as well.".as_bytes()).expect("ERROR");
+            mark.write_all("{}".as_bytes()).expect("ERROR");
             index.write_all("println(\"Hello world\")".as_bytes()).expect("ERROR");
 
             println!("Project <{name}> created successfully at <{pth}>.")
@@ -51,6 +51,11 @@ fn main() {
                 let mut lib = File::create(&format!("{path}/src/lib/{libname}.lzr")).expect("ERROR");
                 lib.write_all(&code).expect("ERROR");
                 println!("Saved as <{path}/src/lib/{libname}.lzr>.\n");
+                let lazer_t = fs::read_to_string(&format!("{path}/.lazer")).unwrap();
+                let mut lazer_vec = json::parse(&lazer_t).unwrap();
+                let _ = lazer_vec[&format!("{libname}")] = resp["version-pkg"].clone();
+                let mut mark = File::create(&format!("{path}/.lazer")).unwrap();
+                mark.write_all(json::stringify(lazer_vec).as_bytes()).expect("ERROR");
             }else{
                 println!("Library <{libname}> isn't found on server or .lazer file not found. Try to change your input!\n\n");
             }
@@ -78,8 +83,36 @@ fn main() {
             println!("{body}");
         }else if arg == "version-running" {
             println!("Version: {VERSION_EXPORT}\n");
+        }else if arg == "update" {
+            let libname = &args[2];
+            let path = &args[3];
+            println!("Looking for library <{libname}> updates...\n");
+            let response = get(&format!("https://lazer-repo-default-rtdb.firebaseio.com/{libname}.json")).unwrap();
+            let body = response.text().unwrap();
+            let resp = json::parse(&body).unwrap();
+            if resp.len() > 0 && Path::new(&format!("{path}/.lazer")).exists() && Path::new(path).exists() {
+                let lazer_t = fs::read_to_string(&format!("{path}/.lazer")).unwrap();
+                let lazer_vec = json::parse(&lazer_t).unwrap();
+                let cuver = lazer_vec[&format!("{libname}")].to_string();
+                let newver = resp["version-pkg"].to_string();
+                if cuver != newver {
+                    println!("Update found. Library <{libname}> is downloading (v. {newver}) \n");
+                    let json_value = resp["code"].to_string();
+                    let code = general_purpose::STANDARD.decode(json_value).unwrap();
+                    let mut lib = File::create(&format!("{path}/src/lib/{libname}.lzr")).expect("ERROR");
+                    lib.write_all(&code).expect("ERROR");
+                    println!("Saved <{libname}> as <{path}/src/lib/{libname}.lzr>; New version: {newver}.\n");
+                    let lazer_t = fs::read_to_string(&format!("{path}/.lazer")).unwrap();
+                    let mut lazer_vec = json::parse(&lazer_t).unwrap();
+                    let _ = lazer_vec[&format!("{libname}")] = resp["version-pkg"].clone();
+                    let mut mark = File::create(&format!("{path}/.lazer")).unwrap();
+                    mark.write_all(json::stringify(lazer_vec).as_bytes()).expect("ERROR");
+                }else if newver == cuver {
+                    println!("You are using the last version of <{libname}>, chill :)");
+                }
+            }
         }
     }else{
-        println!("It's looks like you need a help.\n\nMethods:\nnew - create new project. Syntax: new [name,] [directory]\nrun - Runs the project. Syntax: run [directory]\nremove - Destroys the project. Syntax: remove [directory]\ninstall - Installs library into your project. Syntax: install [libname,] [directory_project]\navailable-libs - Scan the repo for libraries name. Syntax: available-libs\nunset - Removes library from project. Syntax: unset [libname,] [directory]\n:3\nIf you want to upload your own library, dm me on discord: @monsler\n\n");
+        println!("It's looks like you need a help.\n\nMethods:\nnew - create new project. Syntax: new [name,] [directory]\nrun - Runs the project. Syntax: run [directory]\nremove - Destroys the project. Syntax: remove [directory]\ninstall - Installs library into your project. Syntax: install [libname,] [directory_project]\navailable-libs - Scan the repo for libraries name. Syntax: available-libs\nunset - Removes library from project. Syntax: unset [libname,] [directory]\nupdate - Check for library's update. Syntax: update [libname,] [directory]\n:3\nIf you want to upload your own library, dm me on discord: @monsler\n\n");
     }
 }
