@@ -1,6 +1,6 @@
 import strutils, os, httpclient, json, base64
 
-proc main() = 
+proc main* = 
   let text = "| Lazer | Lazurite package manager |"
   let equ = repeat("=", len(text))
   echo equ, "\n", text, "\n", equ
